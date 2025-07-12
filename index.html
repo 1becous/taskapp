@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/normal.css">
+    <link rel="stylesheet" href="css/main.css">
+    <title>Task App</title>
+</head>
+<body>
+    <h1 class="main_text">Task App</h1>
+    
+    <!-- Інструкції для користувача -->
+    <div class="instructions">
+        <p>💡 <strong>Як користуватися:</strong></p>
+        <ul>
+            <li>Перетягуйте завдання між колонками</li>
+            <li>Подвійний клік на завданні - видалити</li>
+            <li>Додайте нові завдання внизу</li>
+            <li>Всі зміни зберігаються в хмарі</li>
+        </ul>
+    </div>
+    
+    <!-- Кнопка для створення нових завдань -->
+    <div class="add-task-container">
+        <input type="text" id="new-task-input" placeholder="Введіть назву нового завдання" maxlength="50">
+        <button id="add-task-btn">Додати завдання</button>
+    </div>
+    
+    <div class="block">
+        <div class="block_first block_task">
+            <h3>На редагування</h3>
+            <div class="block_list" id="right">
+                <div class="block_task-list" draggable="true" id="task-1">Task 1</div>
+                <div class="block_task-list" draggable="true" id="task-2">Task 2</div>
+                <div class="block_task-list" draggable="true" id="task-3">Task 3</div>
+                <div class="block_task-list" draggable="true" id="task-4">Task 4</div>
+            </div>
+        </div>
+        <div class="block_second block_task">
+            <h3>На тайп</h3>
+            <div class="block_list" id="center">
+                <div class="block_task-list" draggable="true" id="task-5">Task 5</div>
+                <div class="block_task-list" draggable="true" id="task-6">Task 6</div>
+            </div>
+        </div>
+        <div class="block_third block_task">
+            <h3>Готово</h3>
+            <div class="block_list" id="left">
+                <div class="block_task-list" draggable="true" id="task-7">Task 7</div>
+                <div class="block_task-list" draggable="true" id="task-8">Task 8</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <script src="js/firebase-config.js"></script>
+    <script src="js/script.js"></script>
+
+</body>
+</html>

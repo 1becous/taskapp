@@ -1,0 +1,37 @@
+// Кольори
+$primary-color: #090040;
+$secondary-color: #120279;
+$accent-color: #FFCC00;
+$accent-light: #fffb00;
+$white: #ffffff;
+$black: #000000;
+
+// Прозорість
+$opacity-light: 0.1;
+$opacity-medium: 0.2;
+$opacity-heavy: 0.8;
+
+// Розміри
+$border-radius-small: 5px;
+$border-radius-medium: 8px;
+$border-radius-large: 10px;
+$border-radius-xl: 15px;
+
+// Відступи
+$spacing-xs: 5px;
+$spacing-sm: 8px;
+$spacing-md: 10px;
+$spacing-lg: 15px;
+$spacing-xl: 20px;
+$spacing-xxl: 21px;
+
+// Тіні
+$shadow-light: 0 4px 8px rgba(0, 0, 0, 0.2);
+$shadow-medium: 0 5px 15px rgba(0, 0, 0, 0.3);
+
+// Анімації
+$transition-fast: 0.2s ease;
+$transition-medium: 0.3s ease;
+
+// Шрифти
+$font-family: "Inter Tight", sans-serif;

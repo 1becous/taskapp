@@ -1,0 +1,53 @@
+@import '../var/var.scss';
+
+// Стилі для перетягуваних елементів завдань
+.block_task-list {
+    cursor: grab;
+    transition: all $transition-fast;
+    user-select: none;
+    margin: $spacing-sm 0;
+    padding: $spacing-md $spacing-lg;
+    background-color: rgba($white, $opacity-light);
+    border-radius: $border-radius-medium;
+    border: 1px solid rgba($white, $opacity-medium);
+    position: relative;
+
+    &:active {
+        cursor: grabbing;
+    }
+
+    &:hover {
+        background-color: rgba($white, $opacity-medium);
+        transform: translateY(-2px);
+        box-shadow: $shadow-light;
+
+        &::after {
+            opacity: 1;
+        }
+    }
+
+    // Стан під час перетягування
+    &.is-dragging {
+        opacity: 0.5;
+        transform: rotate(5deg);
+        box-shadow: $shadow-medium;
+    }
+
+    // Підказка для користувача
+    &::after {
+        content: "Подвійний клік для видалення";
+        position: absolute;
+        top: -30px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: rgba($black, $opacity-heavy);
+        color: $white;
+        padding: $spacing-xs $spacing-md;
+        border-radius: $border-radius-small;
+        font-size: 12px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity $transition-medium;
+        white-space: nowrap;
+    }
+} 

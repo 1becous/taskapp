@@ -1,0 +1,60 @@
+@import '../var/var.scss';
+
+// Основний заголовок
+.main_text {
+    display: flex;
+    text-align: center;
+    align-items: center;
+    justify-content: center;
+}
+
+// Основний контейнер блоків
+.block {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+
+    // Блоки завдань
+    &_task {
+        margin: $spacing-lg $spacing-xxl;
+        padding: $spacing-md $spacing-lg;
+        width: 100%;
+        border-radius: $border-radius-xl;
+        text-align: center;
+        background-color: $primary-color;
+        color: $white;
+
+        > h3 {
+            margin: 0;
+            padding: $spacing-lg;
+            border-radius: $border-radius-medium;
+            background-color: $secondary-color;
+            height: 100%;
+        }
+    }
+
+    // Перший блок (На редагування)
+    &_first {
+        background-color: $accent-color;
+
+        > h3 {
+            background-color: $accent-light;
+            color: $black;
+        }
+    }
+
+    // Список завдань
+    &_list {
+        margin-top: $spacing-lg;
+        min-height: 100px;
+        transition: all $transition-medium;
+
+        // Стилі для drop zones під час перетягування
+        &.drag-over {
+            background-color: rgba($white, $opacity-light);
+            border: 2px dashed $white;
+            border-radius: $border-radius-medium;
+            transform: scale(1.02);
+        }
+    }
+} 

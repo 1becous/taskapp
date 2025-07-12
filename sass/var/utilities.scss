@@ -1,0 +1,50 @@
+@import '../var/var.scss';
+
+// Утилітарні класи для flexbox
+.flex {
+    display: flex;
+}
+
+.flex-center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.flex-column {
+    display: flex;
+    flex-direction: column;
+}
+
+// Утилітарні класи для відступів
+.m-0 { margin: 0; }
+.p-0 { padding: 0; }
+
+.mt-sm { margin-top: $spacing-sm; }
+.mt-md { margin-top: $spacing-md; }
+.mt-lg { margin-top: $spacing-lg; }
+
+.mb-sm { margin-bottom: $spacing-sm; }
+.mb-md { margin-bottom: $spacing-md; }
+.mb-lg { margin-bottom: $spacing-lg; }
+
+// Утилітарні класи для кольорів
+.text-white { color: $white; }
+.text-black { color: $black; }
+.text-primary { color: $primary-color; }
+.text-accent { color: $accent-color; }
+
+.bg-white { background-color: $white; }
+.bg-primary { background-color: $primary-color; }
+.bg-secondary { background-color: $secondary-color; }
+.bg-accent { background-color: $accent-color; }
+
+// Утилітарні класи для border-radius
+.rounded-sm { border-radius: $border-radius-small; }
+.rounded-md { border-radius: $border-radius-medium; }
+.rounded-lg { border-radius: $border-radius-large; }
+.rounded-xl { border-radius: $border-radius-xl; }
+
+// Утилітарні класи для transitions
+.transition-fast { transition: all $transition-fast; }
+.transition-medium { transition: all $transition-medium; } 

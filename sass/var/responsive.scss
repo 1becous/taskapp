@@ -1,0 +1,52 @@
+@import '../var/var.scss';
+
+// Мобільні пристрої (до 768px)
+@media (max-width: 768px) {
+    .block {
+        flex-direction: column;
+        
+        &_task {
+            margin: $spacing-md;
+            width: 90%;
+        }
+    }
+    
+    .add-task-container {
+        flex-direction: column;
+        gap: $spacing-md;
+        
+        #new-task-input {
+            min-width: 250px;
+        }
+    }
+    
+    .instructions {
+        margin: $spacing-md;
+        padding: $spacing-md;
+    }
+}
+
+// Планшети (768px - 1024px)
+@media (min-width: 769px) and (max-width: 1024px) {
+    .block {
+        &_task {
+            margin: $spacing-lg;
+        }
+    }
+    
+    #new-task-input {
+        min-width: 250px;
+    }
+}
+
+// Великі екрани (більше 1024px)
+@media (min-width: 1025px) {
+    .block {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    
+    .instructions {
+        max-width: 800px;
+    }
+} 
