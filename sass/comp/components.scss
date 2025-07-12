@@ -1,41 +1,5 @@
 @import '../var/var.scss';
 
-// Стилі для інструкцій
-.instructions {
-    max-width: 600px;
-    margin: $spacing-xl auto;
-    padding: $spacing-lg $spacing-xl;
-    background-color: rgba($accent-color, $opacity-light);
-    border: 2px solid $accent-color;
-    border-radius: $border-radius-large;
-    color: $primary-color;
-
-    p {
-        margin-bottom: $spacing-md;
-        font-weight: bold;
-    }
-
-    ul {
-        list-style: none;
-        padding-left: 0;
-    }
-
-    li {
-        margin: $spacing-xs 0;
-        padding: $spacing-xs 0;
-        position: relative;
-        padding-left: $spacing-xl;
-
-        &::before {
-            content: "→";
-            position: absolute;
-            left: 0;
-            color: $accent-color;
-            font-weight: bold;
-        }
-    }
-}
-
 // Стилі для заголовка блоку з кнопкою
 .block-header {
     display: flex;
@@ -72,52 +36,6 @@
     }
     &:active {
         transform: scale(0.95);
-    }
-}
-
-// Стилі для контейнера додавання завдань
-.add-task-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: $spacing-md;
-    margin: $spacing-xl 0;
-    padding: 0 $spacing-xl;
-}
-
-#new-task-input {
-    padding: $spacing-md $spacing-lg;
-    border: 2px solid $primary-color;
-    border-radius: $border-radius-medium;
-    font-size: 16px;
-    outline: none;
-    transition: border-color $transition-medium;
-    min-width: 300px;
-
-    &:focus {
-        border-color: $accent-color;
-        box-shadow: 0 0 0 3px rgba($accent-color, $opacity-light);
-    }
-}
-
-#add-task-btn {
-    padding: $spacing-md $spacing-xl;
-    background-color: $primary-color;
-    color: $white;
-    border: none;
-    border-radius: $border-radius-medium;
-    font-size: 16px;
-    cursor: pointer;
-    transition: all $transition-medium;
-
-    &:hover {
-        background-color: $secondary-color;
-        transform: translateY(-2px);
-        box-shadow: $shadow-light;
-    }
-
-    &:active {
-        transform: translateY(0);
     }
 }
 
@@ -191,3 +109,55 @@
         color: $accent-color;
     }
 } 
+
+.task-url{
+    a{
+        color: white;
+        text-decoration: none;
+        &:hover{
+            color: $accent-color;
+        }
+    }
+}
+
+.quick-instructions {
+    max-width: 500px;
+    margin: 24px auto 12px auto;
+    padding: 14px 20px;
+    background: #fffbe7;
+    border: 2px solid #FFCC00;
+    border-radius: 12px;
+    color: #090040;
+    font-size: 1.08rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    ul {
+        list-style: none;
+        padding-left: 0;
+        margin: 0;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 18px 24px;
+        justify-content: flex-start;
+    }
+    li {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 500;
+        background: none;
+        border-radius: 6px;
+        padding: 2px 8px;
+        transition: background 0.2s;
+    }
+    li:hover {
+        background: #fff3b0;
+    }
+}
+
+@media (max-width: 600px) {
+    .quick-instructions {
+        font-size: 0.98rem;
+        padding: 10px 6px;
+        ul { flex-direction: column; gap: 8px; }
+    }
+}

@@ -1,15 +1,8 @@
-// Отримання елементів DOM
-let lists = document.getElementsByClassName("block_task-list");
-let rightBlock = document.getElementById("right");
-let centerBlock = document.getElementById("center");
-let leftBlock = document.getElementById("left");
-let newTaskInput = document.getElementById("new-task-input");
-let addTaskBtn = document.getElementById("add-task-btn");
+// ======= DOM Elements =======
+const rightBlock = document.getElementById("right");
+const centerBlock = document.getElementById("center");
+const leftBlock = document.getElementById("left");
 
-// Лічильник для унікальних ID завдань
-let taskCounter = 9; // Починаємо з 9, оскільки вже є 8 завдань
-
-// ===================== MODAL TASK =====================
 const modal = document.getElementById('modal-task');
 const modalClose = document.getElementById('modal-task-close');
 const modalForm = document.getElementById('modal-task-form');
@@ -17,7 +10,7 @@ const modalTitle = document.getElementById('modal-task-title');
 const modalUrl = document.getElementById('modal-task-url');
 const modalTargetBlock = document.getElementById('modal-task-target-block');
 
-// Відкрити модалку по кліку на +
+// ======= Modal Logic =======
 document.querySelectorAll('.add-task-btn').forEach(btn => {
     btn.addEventListener('click', function() {
         modal.style.display = 'flex';
@@ -27,246 +20,147 @@ document.querySelectorAll('.add-task-btn').forEach(btn => {
         setTimeout(() => modalTitle.focus(), 100);
     });
 });
+modalClose.onclick = function() { modal.style.display = 'none'; };
+window.onclick = function(e) { if (e.target === modal) modal.style.display = 'none'; };
 
-// Закрити модалку
-modalClose.onclick = function() {
-    modal.style.display = 'none';
-};
-window.onclick = function(e) {
-    if (e.target === modal) modal.style.display = 'none';
-};
+// ======= Firestore Helpers =======
+const TASKS_DOC = 'main';
+const TASKS_COLL = 'tasks';
 
-// Додавання завдання через модалку
-modalForm.onsubmit = function(e) {
+async function getStateFromFirebase() {
+    const doc = await db.collection(TASKS_COLL).doc(TASKS_DOC).get();
+    if (doc.exists) return doc.data();
+    return { right: [], center: [], left: [] };
+}
+async function setStateToFirebase(state) {
+    await db.collection(TASKS_COLL).doc(TASKS_DOC).set(state);
+}
+
+// ======= Render Logic =======
+function renderAll(state) {
+    rightBlock.innerHTML = '';
+    centerBlock.innerHTML = '';
+    leftBlock.innerHTML = '';
+    (state.right || []).forEach(task => renderTask(task, rightBlock));
+    (state.center || []).forEach(task => renderTask(task, centerBlock));
+    (state.left || []).forEach(task => renderTask(task, leftBlock));
+}
+function renderTask(task, block) {
+    const el = document.createElement('div');
+    el.className = 'block_task-list';
+    el.draggable = true;
+    el.dataset.title = task.title;
+    el.dataset.url = task.url;
+    el.dataset.id = task.id;
+    el.id = task.id;
+    const shortUrl = task.url.length > 20 ? task.url.slice(0, 20) + '...' : task.url;
+    el.innerHTML = `
+        <div class="task-title" draggable="false" style="user-select:none;">${task.title}</div>
+        <div class="task-url" draggable="false" style="user-select:none;">URL: <a href="${task.url}" target="_blank" rel="noopener" class="task-link" draggable="false" style="user-select:none;">${shortUrl}</a></div>
+    `;
+    addDragHandlers(el);
+    addClickHandlers(el);
+    block.appendChild(el);
+}
+
+// ======= Add Task =======
+modalForm.onsubmit = async function(e) {
     e.preventDefault();
     const title = modalTitle.value.trim();
     const url = modalUrl.value.trim();
     const blockId = modalTargetBlock.value;
     if (!title || !url) return;
-    addTaskToBlock(title, url, blockId);
+    const id = 'task-' + Date.now() + '-' + Math.floor(Math.random()*1000);
+    const newTask = { id, title, url };
+    let state = await getStateFromFirebase();
+    if (!state[blockId]) state[blockId] = [];
+    state[blockId].push(newTask);
+    await setStateToFirebase(state);
+    renderAll(state);
     modal.style.display = 'none';
-    saveStateToFirebase();
-    saveLocalState();
 };
 
-// Додаємо завдання у відповідний блок (з назвою і url, форматування)
-function addTaskToBlock(title, url, blockId, id) {
-    const block = document.getElementById(blockId);
-    const newTask = document.createElement('div');
-    newTask.className = 'block_task-list';
-    newTask.draggable = true;
-    newTask.dataset.title = title;
-    newTask.dataset.url = url;
-    newTask.id = id || ('task-' + Date.now() + '-' + Math.floor(Math.random()*1000));
-    // Скорочення url для відображення
-    const shortUrl = url.length > 24 ? url.slice(0, 20) + '...' : url;
-    newTask.innerHTML = `
-        <div class="task-title" draggable="false" style="user-select:none;">${title}</div>
-        <div class="task-url" draggable="false" style="user-select:none;">URL: <a href="${url}" target="_blank" rel="noopener" class="task-link" draggable="false" style="user-select:none;">${shortUrl}</a></div>
-    `;
-    addDragHandlers(newTask);
-    addClickHandlers(newTask);
-    block.appendChild(newTask);
-}
+// ======= Drag & Drop =======
+[rightBlock, centerBlock, leftBlock].forEach(block => addDropZoneHandlers(block));
 
-// ===================== Кінець MODAL TASK =====================
-
-// =================================================================
-// 1. Функціональність додавання нових завдань
-// =================================================================
-
-// Функція для створення нового завдання
-function createNewTask(taskText) {
-    const newTask = document.createElement("div");
-    newTask.className = "block_task-list";
-    newTask.draggable = true;
-    newTask.id = "task-" + taskCounter;
-    newTask.textContent = taskText;
-    
-    // Додаємо обробники подій для нового завдання
-    addDragHandlers(newTask);
-    addClickHandlers(newTask);
-    
-    // Додаємо завдання до першого блоку (На редагування)
-    rightBlock.appendChild(newTask);
-    
-    taskCounter++;
-    return newTask;
-}
-
-// Функція для додавання обробників drag and drop до елемента
 function addDragHandlers(element) {
     element.draggable = true;
-    // Обробник початку перетягування (dragstart)
     element.addEventListener("dragstart", function(e) {
         e.dataTransfer.setData("text/plain", e.currentTarget.id);
         e.dataTransfer.effectAllowed = "move";
         e.currentTarget.classList.add("is-dragging");
-        
-        setTimeout(() => {
-            e.currentTarget.style.opacity = "0.5";
-        }, 0);
+        setTimeout(() => { e.currentTarget.style.opacity = "0.5"; }, 0);
     });
-
-    // Обробник закінчення перетягування (dragend)
     element.addEventListener("dragend", function(e) {
         e.currentTarget.classList.remove("is-dragging");
         e.currentTarget.style.opacity = "1";
     });
-
-    // Обробники для покращення UX
-    element.addEventListener("dragenter", function(e) {
-        e.preventDefault();
-    });
-
-    element.addEventListener("dragover", function(e) {
-        e.preventDefault();
-    });
+    element.addEventListener("dragenter", function(e) { e.preventDefault(); });
+    element.addEventListener("dragover", function(e) { e.preventDefault(); });
 }
-
-// Функція для додавання обробників кліків до елемента
-function addClickHandlers(element) {
-    let clickTimeout;
-    
-    // Обробник для подвійного кліку (видалення завдання)
-    element.addEventListener("click", function(e) {
-        clickTimeout = setTimeout(() => {
-            // Одинарний клік - можна додати редагування в майбутньому
-        }, 200);
-    });
-    
-    element.addEventListener("dblclick", function(e) {
-        clearTimeout(clickTimeout);
-        e.preventDefault();
-        
-        // Додаємо анімацію видалення
-        element.style.animation = "deleteAnimation 0.3s ease";
-        element.style.opacity = "0";
-        element.style.transform = "scale(0.8)";
-        
-        setTimeout(() => {
-            element.remove();
-            saveStateToFirebase(); // Зберігаємо в Firebase
-            saveLocalState(); // Backup в localStorage
-        }, 300);
-    });
-}
-
-// Обробник для кнопки додавання завдання
-addTaskBtn.addEventListener("click", function() {
-    const taskText = newTaskInput.value.trim();
-    if (taskText) {
-        createNewTask(taskText);
-        newTaskInput.value = "";
-        newTaskInput.focus();
-        saveStateToFirebase(); // Зберігаємо в Firebase
-        saveLocalState(); // Backup в localStorage
-    }
-});
-
-// Обробник для Enter в полі вводу
-newTaskInput.addEventListener("keypress", function(e) {
-    if (e.key === "Enter") {
-        const taskText = newTaskInput.value.trim();
-        if (taskText) {
-            createNewTask(taskText);
-            newTaskInput.value = "";
-            saveStateToFirebase(); // Зберігаємо в Firebase
-            saveLocalState(); // Backup в localStorage
-        }
-    }
-});
-
-// =================================================================
-// 2. Додавання обробників подій для ЦІЛЬОВИХ ЗОН (drop zones)
-// =================================================================
-
-// Функція для додавання обробників до drop zones
 function addDropZoneHandlers(dropZone) {
-    // Обробник dragover - дозволяє скидання
     dropZone.addEventListener("dragover", function(e) {
         e.preventDefault();
         e.dataTransfer.dropEffect = "move";
         dropZone.classList.add("drag-over");
     });
-
-    // Обробник dragleave - видаляє візуальний ефект
     dropZone.addEventListener("dragleave", function(e) {
         e.preventDefault();
         dropZone.classList.remove("drag-over");
     });
-
-    // Обробник drop - обробляє скидання елемента
-    dropZone.addEventListener("drop", function(e) {
+    dropZone.addEventListener("drop", async function(e) {
         e.preventDefault();
         dropZone.classList.remove("drag-over");
-        
-        // Отримуємо ID елемента, який перетягується
-        const data = e.dataTransfer.getData("text/plain");
-        const draggableElement = document.getElementById(data);
-
-        // Переміщуємо елемент до нового батьківського елемента
+        let data = e.dataTransfer.getData("text/plain");
+        let draggableElement = document.getElementById(data);
         if (draggableElement && draggableElement !== dropZone) {
-            dropZone.appendChild(draggableElement);
-            
-            // Додаємо анімацію для плавного переміщення
-            draggableElement.style.animation = "dropAnimation 0.3s ease";
-            setTimeout(() => {
-                draggableElement.style.animation = "";
-            }, 300);
-            
-            saveStateToFirebase(); // Зберігаємо в Firebase
-            saveLocalState(); // Backup в localStorage
+            // Оновлюємо стан у Firebase
+            let state = await getStateFromFirebase();
+            // Видаляємо з усіх блоків
+            ['right','center','left'].forEach(block => {
+                state[block] = (state[block]||[]).filter(task => task.id !== draggableElement.id);
+            });
+            // Додаємо у новий блок
+            const newTask = {
+                id: draggableElement.id,
+                title: draggableElement.dataset.title || '',
+                url: draggableElement.dataset.url || ''
+            };
+            if (!state[dropZone.id]) state[dropZone.id] = [];
+            state[dropZone.id].push(newTask);
+            await setStateToFirebase(state);
+            renderAll(state);
         }
     });
 }
 
-// Додаємо обробники до всіх drop zones
-addDropZoneHandlers(rightBlock);
-addDropZoneHandlers(centerBlock);
-addDropZoneHandlers(leftBlock);
-
-// =================================================================
-// 3. Додавання обробників подій для ПЕРЕТЯГУВАНИХ ЕЛЕМЕНТІВ
-// =================================================================
-
-// Проходимося по всіх існуючих елементах списку завдань
-for (let list of lists) {
-    
-    // Перевіряємо, чи має елемент ID. Якщо ні, генеруємо унікальний ID.
-    if (!list.id) {
-        list.id = "task-" + Math.random().toString(36).substr(2, 9);
-    }
-
-    // Додаємо обробники до існуючих елементів
-    addDragHandlers(list);
-    addClickHandlers(list);
-}
-
-// =================================================================
-// 4. Додаткові функції для покращення UX
-// =================================================================
-
-// Функція для очищення всіх drag-over класів
-function clearDragOverClasses() {
-    const dropZones = [rightBlock, centerBlock, leftBlock];
-    dropZones.forEach(zone => {
-        zone.classList.remove("drag-over");
+// ======= Double Click Delete =======
+function addClickHandlers(element) {
+    let clickTimeout;
+    element.addEventListener("click", function(e) {
+        clickTimeout = setTimeout(() => {}, 200);
+    });
+    element.addEventListener("dblclick", async function(e) {
+        clearTimeout(clickTimeout);
+        e.preventDefault();
+        element.style.animation = "deleteAnimation 0.3s ease";
+        element.style.opacity = "0";
+        element.style.transform = "scale(0.8)";
+        setTimeout(async () => {
+            // Видаляємо з UI і з Firebase
+            let state = await getStateFromFirebase();
+            ['right','center','left'].forEach(block => {
+                state[block] = (state[block]||[]).filter(task => task.id !== element.id);
+            });
+            await setStateToFirebase(state);
+            renderAll(state);
+        }, 300);
     });
 }
 
-// Додаємо глобальний обробник для очищення класів
-document.addEventListener("dragend", clearDragOverClasses);
-
-// =================================================================
-// 5. Ініціалізація при завантаженні сторінки
-// =================================================================
-
-document.addEventListener('DOMContentLoaded', function() {
-    // Завантажуємо стан з Firebase (або локальний fallback)
-    loadStateFromFirebase();
-    
-    // Додаємо індикатор завантаження
+// ======= Load on Start =======
+document.addEventListener('DOMContentLoaded', async function() {
+    // Loader (optional)
     const loadingIndicator = document.createElement('div');
     loadingIndicator.id = 'loading-indicator';
     loadingIndicator.innerHTML = '🔄 Завантаження...';
@@ -282,9 +176,8 @@ document.addEventListener('DOMContentLoaded', function() {
         z-index: 1000;
     `;
     document.body.appendChild(loadingIndicator);
-    
-    // Приховуємо індикатор після завантаження
-    setTimeout(() => {
-        loadingIndicator.style.display = 'none';
-    }, 2000);
+    // Завантажуємо з Firebase
+    const state = await getStateFromFirebase();
+    renderAll(state);
+    setTimeout(() => { loadingIndicator.style.display = 'none'; }, 500);
 });

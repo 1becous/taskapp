@@ -8,19 +8,19 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/normal.css">
     <link rel="stylesheet" href="css/main.css">
-    <title>Task App</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#FFCC00">
+    <title>Трекер завдань <br> Волинського Вісника</title>
 </head>
 <body>
-    <h1 class="main_text">Task App</h1>
+    <h1 class="main_text">Трекер завдань <br> Волинського Вісника</h1>
     
-    <!-- Інструкції для користувача -->
-    <div class="instructions">
-        <p>💡 <strong>Як користуватися:</strong></p>
+    <!-- Коротка інструкція -->
+    <div class="quick-instructions">
         <ul>
-            <li>Перетягуйте завдання між колонками</li>
-            <li>Подвійний клік на завданні - видалити</li>
-            <li>Додавайте завдання через кнопку "+" біля заголовка</li>
-            <li>Всі зміни зберігаються в хмарі</li>
+            <li>➕ Додавайте завдання через кнопку біля заголовка колонки</li>
+            <li>🖱️ Перетягуйте завдання між колонками для демонстрації їх стану</li>
+            <li>🗑️ Двічі клікніть на завдання, щоб видалити</li>
         </ul>
     </div>
     
@@ -70,6 +70,14 @@
     
     <script src="js/firebase-config.js"></script>
     <script src="js/script.js"></script>
-
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/service-worker.js')
+            .then(reg => console.log('Service Worker registered', reg))
+            .catch(err => console.log('Service Worker registration failed', err));
+        });
+      }
+    </script>
 </body>
 </html>
