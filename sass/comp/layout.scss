@@ -8,22 +8,19 @@
     justify-content: center;
 }
 
-// Основний контейнер блоків
 .block {
     display: flex;
     justify-content: center;
     align-items: flex-start;
 
-    // Блоки завдань
     &_task {
         margin: $spacing-lg $spacing-xxl;
         padding: $spacing-md $spacing-lg;
         width: 100%;
         border-radius: $border-radius-xl;
         text-align: center;
-        background-color: $primary-color;
         color: $white;
-
+        background-color: $primary-color;
         > h3 {
             margin: 0;
             padding: $spacing-lg;
@@ -35,21 +32,50 @@
 
     // Перший блок (На редагування)
     &_first {
-        background-color: $accent-color;
-
+        background: $palette1-red;
+        color: $palette1-yellow;
         > h3 {
-            background-color: $accent-light;
-            color: $black;
+            background-color: $palette1-dark;
+            color: $palette1-yellow;
+        }
+        .block_list {
+            background: $palette1-dark;
+            border-radius: $border-radius-large;
         }
     }
 
-    // Список завдань
+    // Другий блок (На тайп)
+    &_second {
+        background: $palette2-purple;
+        color: $palette2-yellow;
+        > h3 {
+            background-color: $palette2-dark;
+            color: $palette2-yellow;
+        }
+        .block_list {
+            background: $palette2-dark;
+            border-radius: $border-radius-large;
+        }
+    }
+
+    // Третій блок (Готово)
+    &_third {
+        background: $palette3-blue;
+        color: $palette3-lightyellow;
+        > h3 {
+            background-color: $palette3-red;
+            color: $palette3-lightyellow;
+        }
+        .block_list {
+            background: $palette3-red;
+            border-radius: $border-radius-large;
+        }
+    }
+
     &_list {
         margin-top: $spacing-lg;
         min-height: 100px;
         transition: all $transition-medium;
-
-        // Стилі для drop zones під час перетягування
         &.drag-over {
             background-color: rgba($white, $opacity-light);
             border: 2px dashed $white;
