@@ -9,6 +9,68 @@ let addTaskBtn = document.getElementById("add-task-btn");
 // Лічильник для унікальних ID завдань
 let taskCounter = 9; // Починаємо з 9, оскільки вже є 8 завдань
 
+// ===================== MODAL TASK =====================
+const modal = document.getElementById('modal-task');
+const modalClose = document.getElementById('modal-task-close');
+const modalForm = document.getElementById('modal-task-form');
+const modalTitle = document.getElementById('modal-task-title');
+const modalUrl = document.getElementById('modal-task-url');
+const modalTargetBlock = document.getElementById('modal-task-target-block');
+
+// Відкрити модалку по кліку на +
+document.querySelectorAll('.add-task-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        modal.style.display = 'flex';
+        modalTitle.value = '';
+        modalUrl.value = '';
+        modalTargetBlock.value = btn.dataset.block;
+        setTimeout(() => modalTitle.focus(), 100);
+    });
+});
+
+// Закрити модалку
+modalClose.onclick = function() {
+    modal.style.display = 'none';
+};
+window.onclick = function(e) {
+    if (e.target === modal) modal.style.display = 'none';
+};
+
+// Додавання завдання через модалку
+modalForm.onsubmit = function(e) {
+    e.preventDefault();
+    const title = modalTitle.value.trim();
+    const url = modalUrl.value.trim();
+    const blockId = modalTargetBlock.value;
+    if (!title || !url) return;
+    addTaskToBlock(title, url, blockId);
+    modal.style.display = 'none';
+    saveStateToFirebase();
+    saveLocalState();
+};
+
+// Додаємо завдання у відповідний блок (з назвою і url, форматування)
+function addTaskToBlock(title, url, blockId, id) {
+    const block = document.getElementById(blockId);
+    const newTask = document.createElement('div');
+    newTask.className = 'block_task-list';
+    newTask.draggable = true;
+    newTask.dataset.title = title;
+    newTask.dataset.url = url;
+    newTask.id = id || ('task-' + Date.now() + '-' + Math.floor(Math.random()*1000));
+    // Скорочення url для відображення
+    const shortUrl = url.length > 24 ? url.slice(0, 20) + '...' : url;
+    newTask.innerHTML = `
+        <div class="task-title" draggable="false" style="user-select:none;">${title}</div>
+        <div class="task-url" draggable="false" style="user-select:none;">URL: <a href="${url}" target="_blank" rel="noopener" class="task-link" draggable="false" style="user-select:none;">${shortUrl}</a></div>
+    `;
+    addDragHandlers(newTask);
+    addClickHandlers(newTask);
+    block.appendChild(newTask);
+}
+
+// ===================== Кінець MODAL TASK =====================
+
 // =================================================================
 // 1. Функціональність додавання нових завдань
 // =================================================================
@@ -34,21 +96,22 @@ function createNewTask(taskText) {
 
 // Функція для додавання обробників drag and drop до елемента
 function addDragHandlers(element) {
+    element.draggable = true;
     // Обробник початку перетягування (dragstart)
     element.addEventListener("dragstart", function(e) {
-        e.dataTransfer.setData("text/plain", e.target.id);
+        e.dataTransfer.setData("text/plain", e.currentTarget.id);
         e.dataTransfer.effectAllowed = "move";
-        e.target.classList.add("is-dragging");
+        e.currentTarget.classList.add("is-dragging");
         
         setTimeout(() => {
-            e.target.style.opacity = "0.5";
+            e.currentTarget.style.opacity = "0.5";
         }, 0);
     });
 
     // Обробник закінчення перетягування (dragend)
     element.addEventListener("dragend", function(e) {
-        e.target.classList.remove("is-dragging");
-        e.target.style.opacity = "1";
+        e.currentTarget.classList.remove("is-dragging");
+        e.currentTarget.style.opacity = "1";
     });
 
     // Обробники для покращення UX

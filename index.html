@@ -19,32 +19,48 @@
         <ul>
             <li>Перетягуйте завдання між колонками</li>
             <li>Подвійний клік на завданні - видалити</li>
-            <li>Додайте нові завдання внизу</li>
+            <li>Додавайте завдання через кнопку "+" біля заголовка</li>
             <li>Всі зміни зберігаються в хмарі</li>
         </ul>
     </div>
     
-    <!-- Кнопка для створення нових завдань -->
-    <div class="add-task-container">
-        <input type="text" id="new-task-input" placeholder="Введіть назву нового завдання" maxlength="50">
-        <button id="add-task-btn">Додати завдання</button>
+    <!-- Модальне вікно для додавання завдання -->
+    <div id="modal-task" class="modal-task" style="display:none;">
+        <div class="modal-task-content">
+            <span class="modal-task-close" id="modal-task-close">&times;</span>
+            <h2>Додати завдання</h2>
+            <form id="modal-task-form">
+                <label for="modal-task-title">Назва завдання</label>
+                <input type="text" id="modal-task-title" name="title" required maxlength="50">
+                <label for="modal-task-url">Google Doc URL</label>
+                <input type="url" id="modal-task-url" name="url" required placeholder="https://docs.google.com/...">
+                <input type="hidden" id="modal-task-target-block" name="targetBlock">
+                <button type="submit" id="modal-task-submit">Додати</button>
+            </form>
+        </div>
     </div>
     
     <div class="block">
         <div class="block_first block_task">
-            <h3>На редагування</h3>
-            <div class="block_list" id="right">
+            <div class="block-header">
+                <h3>На редагування</h3>
+                <button class="add-task-btn" data-block="right" title="Додати завдання">+</button>
             </div>
+            <div class="block_list" id="right"></div>
         </div>
         <div class="block_second block_task">
-            <h3>На тайп</h3>
-            <div class="block_list" id="center">
+            <div class="block-header">
+                <h3>На тайп</h3>
+                <button class="add-task-btn" data-block="center" title="Додати завдання">+</button>
             </div>
+            <div class="block_list" id="center"></div>
         </div>
         <div class="block_third block_task">
-            <h3>Готово</h3>
-            <div class="block_list" id="left">
+            <div class="block-header">
+                <h3>Готово</h3>
+                <button class="add-task-btn" data-block="left" title="Додати завдання">+</button>
             </div>
+            <div class="block_list" id="left"></div>
         </div>
     </div>
 

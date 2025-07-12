@@ -50,4 +50,10 @@
         transition: opacity $transition-medium;
         white-space: nowrap;
     }
+}
+
+// Забороняємо drag і виділення для дочірніх елементів
+.task-title, .task-link {
+    user-select: none;
+    -webkit-user-drag: none;
 } 

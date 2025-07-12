@@ -36,6 +36,45 @@
     }
 }
 
+// Стилі для заголовка блоку з кнопкою
+.block-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $spacing-md;
+    margin-bottom: $spacing-md;
+    h3 {
+        margin: 0;
+        flex: 1 1 auto;
+        text-align: left;
+    }
+}
+
+.add-task-btn {
+    background: $accent-color;
+    color: $primary-color;
+    border: none;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    font-size: 1.5rem;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: $shadow-light;
+    transition: background $transition-medium, color $transition-medium, transform $transition-fast;
+    &:hover {
+        background: $primary-color;
+        color: $accent-color;
+        transform: scale(1.1);
+    }
+    &:active {
+        transform: scale(0.95);
+    }
+}
+
 // Стилі для контейнера додавання завдань
 .add-task-container {
     display: flex;
@@ -79,5 +118,76 @@
 
     &:active {
         transform: translateY(0);
+    }
+}
+
+// Модальне вікно для додавання завдання
+.modal-task {
+    position: fixed;
+    z-index: 2000;
+    left: 0; top: 0; right: 0; bottom: 0;
+    width: 100vw; height: 100vh;
+    background: rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.modal-task-content {
+    background: $white;
+    color: $primary-color;
+    border-radius: $border-radius-large;
+    padding: 32px 24px 24px 24px;
+    min-width: 320px;
+    max-width: 90vw;
+    box-shadow: $shadow-medium;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+}
+.modal-task-close {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    font-size: 2rem;
+    color: $primary-color;
+    cursor: pointer;
+    transition: color $transition-medium;
+    &:hover { color: $accent-color; }
+}
+#modal-task-form {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+}
+#modal-task-form label {
+    font-weight: 500;
+}
+#modal-task-form input[type="text"],
+#modal-task-form input[type="url"] {
+    padding: $spacing-md;
+    border: 1.5px solid $primary-color;
+    border-radius: $border-radius-medium;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color $transition-medium;
+}
+#modal-task-form input[type="text"]:focus,
+#modal-task-form input[type="url"]:focus {
+    border-color: $accent-color;
+}
+#modal-task-submit {
+    background: $accent-color;
+    color: $primary-color;
+    border: none;
+    border-radius: $border-radius-medium;
+    padding: $spacing-md;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background $transition-medium, color $transition-medium;
+    &:hover {
+        background: $primary-color;
+        color: $accent-color;
     }
 } 
