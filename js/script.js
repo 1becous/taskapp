@@ -85,64 +85,125 @@ async function saveCols(id, cols){ await boardRef(id).set(normCols(cols),{merge:
 /* ===== Messaging ===== */
 let messaging = null;
 
-async function ensureMessagingReady(){
-  if(!isMessagingSupported()) throw new Error('NOT_SUPPORTED');
-  if(!CONFIG.VAPID_KEY || CONFIG.VAPID_KEY.startsWith('PASTE_')) throw new Error('NO_VAPID');
-  if(!('serviceWorker' in navigator)) throw new Error('NO_SW');
+async function ensureMessagingReady() {
+  if (!isMessagingSupported()) throw new Error('NOT_SUPPORTED');
+  if (!CONFIG.VAPID_KEY || CONFIG.VAPID_KEY.startsWith('PASTE_')) throw new Error('NO_VAPID');
+  if (!('serviceWorker' in navigator)) throw new Error('NO_SW');
 
-  try{ await navigator.serviceWorker.register('/firebase-messaging-sw.js',{scope:'/'}); await navigator.serviceWorker.ready; }
-  catch(e){ console.error('[FCM] sw register fail',e); throw new Error('SW_REGISTER_FAIL'); }
+  // чекаємо, поки активується існуючий service-worker.js
+  let swReg;
+  try {
+    swReg = await navigator.serviceWorker.ready;
+  } catch (e) {
+    console.error('[FCM] SW not ready', e);
+    throw new Error('SW_NOT_READY');
+  }
 
-  if(!messaging) messaging = firebase.messaging();
+  if (!messaging) messaging = firebase.messaging();
 
-  const perm = await Notification.requestPermission();
-  if(perm!=='granted') throw new Error('PERMISSION_DENIED');
+  // Дозвіл на нотифікації (якщо ще не надано)
+  if (Notification.permission === 'default') {
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') throw new Error('PERMISSION_DENIED');
+  } else if (Notification.permission !== 'granted') {
+    throw new Error('PERMISSION_DENIED');
+  }
 
+  // Отримуємо/кешуємо токен
   let token = localStorage.getItem('fcmToken');
-  if(!token){
-    token = await messaging.getToken({ vapidKey: CONFIG.VAPID_KEY, serviceWorkerRegistration: await navigator.serviceWorker.ready });
-    if(!token) throw new Error('TOKEN_FAIL');
+  if (!token) {
+    try {
+      token = await messaging.getToken({
+        vapidKey: CONFIG.VAPID_KEY,
+        serviceWorkerRegistration: swReg
+      });
+    } catch (e) {
+      console.error('[FCM] getToken failed', e);
+      throw new Error('TOKEN_FAIL');
+    }
+    if (!token) throw new Error('TOKEN_FAIL');
     localStorage.setItem('fcmToken', token);
   }
 
-  if(!ensureMessagingReady._bound){
-    messaging.onMessage((p)=>{
-      const n=p?.notification||{};
-      showToast(`<strong>${n.title||'Нове сповіщення'}</strong><div class="small">${n.body||''}</div>`,5000);
+  // Обробка фореграунд-повідомлень (щоб з’являлись тости)
+  if (!ensureMessagingReady._bound) {
+    messaging.onMessage((payload) => {
+      const n = payload?.notification || {};
+      showToast(
+        `<strong>${n.title || 'Нове сповіщення'}</strong><div class="small">${n.body || ''}</div>`,
+        5000
+      );
     });
-    ensureMessagingReady._bound=true;
+    ensureMessagingReady._bound = true;
   }
 
   return token;
 }
 
-async function getMyTopics(){
+async function getMyTopics() {
   const token = localStorage.getItem('fcmToken');
-  if(!token) return {token:null, topics:[]};
+  if (!token) return { token: null, topics: [] };
   const doc = await firebase.firestore().collection('subscribers').doc(token).get();
   const topics = (doc.exists && Array.isArray(doc.data().topics)) ? doc.data().topics : [];
   return { token, topics };
 }
-function topicFor(boardId, col){ return `board_${boardId}_${col}`.replace(/[^a-zA-Z0-9_\\-]/g,'_'); }
-function setBellUi(btn, sub){ btn.dataset.subscribed=sub?'1':'0'; btn.title=sub?'Відписатись від сповіщень':'Підписатись на сповіщення'; btn.textContent=sub?'🔔':'🔕'; }
 
-async function toggleSubscription(boardId, column, wantSub, btnEl){
+function topicFor(boardId, col) {
+  return `board_${boardId}_${col}`.replace(/[^a-zA-Z0-9_\-]/g, '_');
+}
+
+function setBellUi(btn, sub) {
+  btn.dataset.subscribed = sub ? '1' : '0';
+  btn.title = sub ? 'Відписатись від сповіщень' : 'Підписатись на сповіщення';
+  btn.textContent = sub ? '🔔' : '🔕';
+}
+
+async function toggleSubscription(boardId, column, wantSub, btnEl) {
   btnEl.disabled = true;
-  try{
+  try {
     const token = await ensureMessagingReady();
-    const callable = wantSub ? functions.httpsCallable('subscribeToColumn') : functions.httpsCallable('unsubscribeFromColumn');
+    const callable = wantSub
+      ? functions.httpsCallable('subscribeToColumn')
+      : functions.httpsCallable('unsubscribeFromColumn');
+
     await callable({ token, boardId, column });
     setBellUi(btnEl, wantSub);
-    showToast(wantSub ? `🔔 Підписка на «${column==='right'?'На редагування':'На тайп'}» увімкнена`
-                      : `🔕 Підписку вимкнено`);
-  }catch(e){
+
+    showToast(
+      wantSub
+        ? `🔔 Підписка на «${column === 'right' ? 'На редагування' : 'На тайп'}» увімкнена`
+        : '🔕 Підписку вимкнено'
+    );
+  } catch (e) {
     console.error('[FCM] toggleSubscription:', e);
-    if(String(e.message).includes('NO_VAPID')) openNotifyModal('<p><strong>VAPID ключ не налаштований.</strong></p><p>Встав публічний ключ у <code>CONFIG.VAPID_KEY</code> (Firebase → Cloud Messaging → Web Push certificates).</p>');
-    else if(String(e.message).includes('NOT_SUPPORTED')) openNotifyModal('<p>Цей браузер/iOS PWA не підтримує пуші FCM.</p><p>Увімкнено режим сповіщень у відкритій вкладці (тости).</p>');
-    else if(String(e.message).includes('PERMISSION_DENIED')) openNotifyModal('<p>Доступ до сповіщень заблоковано.</p><p>Дозволь у налаштуваннях сайту й спробуй знову.</p>');
-    else if(String(e.message).includes('SW')) openNotifyModal('<p>Не знайдено <code>/firebase-messaging-sw.js</code> у корені або сайт не https.</p>');
-    else showToast('Не вдалося змінити підписку. Перевір консоль.', 4500);
-  }finally{ btnEl.disabled = false; }
+    const msg = String(e.message || '');
+
+    if (msg.includes('NO_VAPID')) {
+      openNotifyModal(
+        '<p><strong>VAPID ключ не налаштований.</strong></p>' +
+        '<p>Встав публічний ключ у <code>CONFIG.VAPID_KEY</code> (Firebase → Cloud Messaging → Web Push certificates).</p>'
+      );
+    } else if (msg.includes('NOT_SUPPORTED')) {
+      openNotifyModal(
+        '<p>Цей браузер / iOS PWA не підтримує FCM пуші.</p>' +
+        '<p>Сповіщення працюватимуть у відкритій вкладці (тости).</p>'
+      );
+    } else if (msg.includes('PERMISSION_DENIED')) {
+      openNotifyModal(
+        '<p>Доступ до сповіщень заблоковано.</p>' +
+        '<p>Дозвольте сповіщення у налаштуваннях сайту та спробуйте знову.</p>'
+      );
+    } else if (msg.includes('SW') || msg.includes('SW_NOT_READY') || msg.includes('NO_SW')) {
+      openNotifyModal(
+        '<p>Сервіс-воркер не активний або сайт не з HTTPS/localhost.</p>' +
+        '<p>Перезавантажте сторінку, перевірте <code>service-worker.js</code> та режим HTTPS.</p>'
+      );
+    } else {
+      showToast('Не вдалося змінити підписку. Перевірте консоль.', 4500);
+    }
+  } finally {
+    btnEl.disabled = false;
+  }
 }
 
 /* ===== Tx move ===== */
