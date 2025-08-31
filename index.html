@@ -6,7 +6,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/normal.css">
     <link rel="stylesheet" href="css/main.css">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/x-icon" href="icons/192.ico">
@@ -141,17 +140,15 @@
     <script src="js/script.js" defer></script>
     <script>
       if ('serviceWorker' in navigator) {
-        // перезавантажити сторінку, коли новий SW активується
         navigator.serviceWorker.addEventListener('controllerchange', () => {
-          // контролер змінився => активувався новий SW
+          // коли активується новий SW — оновити сторінку
           window.location.reload();
         });
 
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/service-worker.js')
-            .then(reg => {
-              console.log('SW registered', reg.scope);
-            })
+          // ВАЖЛИВО: відносний шлях і локальний scope для /taskapp/
+          navigator.serviceWorker.register('./service-worker.js', { scope: './' })
+            .then(reg => console.log('SW registered', reg.scope))
             .catch(err => console.log('SW registration failed', err));
         });
       }

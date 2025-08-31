@@ -90,7 +90,7 @@ async function ensureMessagingReady() {
   if (!CONFIG.VAPID_KEY || CONFIG.VAPID_KEY.startsWith('PASTE_')) throw new Error('NO_VAPID');
   if (!('serviceWorker' in navigator)) throw new Error('NO_SW');
 
-  // чекаємо, поки активується існуючий service-worker.js
+  // Чекаємо готовності вже зареєстрованого service-worker.js
   let swReg;
   try {
     swReg = await navigator.serviceWorker.ready;
@@ -101,7 +101,7 @@ async function ensureMessagingReady() {
 
   if (!messaging) messaging = firebase.messaging();
 
-  // Дозвіл на нотифікації (якщо ще не надано)
+  // Запит дозволу (якщо потрібно)
   if (Notification.permission === 'default') {
     const perm = await Notification.requestPermission();
     if (perm !== 'granted') throw new Error('PERMISSION_DENIED');
@@ -109,7 +109,7 @@ async function ensureMessagingReady() {
     throw new Error('PERMISSION_DENIED');
   }
 
-  // Отримуємо/кешуємо токен
+  // Отримати/закешувати токен
   let token = localStorage.getItem('fcmToken');
   if (!token) {
     try {
@@ -125,7 +125,7 @@ async function ensureMessagingReady() {
     localStorage.setItem('fcmToken', token);
   }
 
-  // Обробка фореграунд-повідомлень (щоб з’являлись тости)
+  // Фореграунд-нотіфікації (тости)
   if (!ensureMessagingReady._bound) {
     messaging.onMessage((payload) => {
       const n = payload?.notification || {};
@@ -159,6 +159,22 @@ function setBellUi(btn, sub) {
 }
 
 async function toggleSubscription(boardId, column, wantSub, btnEl) {
+  // якщо дозволу ще не було — покажемо модалку і повторимо підписку після кліку
+  if (isMessagingSupported() && Notification.permission === 'default') {
+    openNotifyModal(
+      '<p>Дозвольте сповіщення, щоб підписатися на колонку.</p>'
+    );
+    // одноразовий обробник "Надати дозвіл"
+    const handler = async () => {
+      notifyTryBtn.removeEventListener('click', handler);
+      closeNotifyModal();
+      // після надання дозволу — повторно викликаємо підписку
+      toggleSubscription(boardId, column, wantSub, btnEl);
+    };
+    notifyTryBtn.addEventListener('click', handler, { once: true });
+    return;
+  }
+
   btnEl.disabled = true;
   try {
     const token = await ensureMessagingReady();
@@ -181,23 +197,14 @@ async function toggleSubscription(boardId, column, wantSub, btnEl) {
     if (msg.includes('NO_VAPID')) {
       openNotifyModal(
         '<p><strong>VAPID ключ не налаштований.</strong></p>' +
-        '<p>Встав публічний ключ у <code>CONFIG.VAPID_KEY</code> (Firebase → Cloud Messaging → Web Push certificates).</p>'
+        '<p>Вставте публічний ключ у <code>CONFIG.VAPID_KEY</code> (Firebase → Cloud Messaging → Web Push certificates).</p>'
       );
     } else if (msg.includes('NOT_SUPPORTED')) {
-      openNotifyModal(
-        '<p>Цей браузер / iOS PWA не підтримує FCM пуші.</p>' +
-        '<p>Сповіщення працюватимуть у відкритій вкладці (тости).</p>'
-      );
+      openNotifyModal('<p>Цей браузер / iOS PWA не підтримує FCM пуші. Будуть тільки тости.</p>');
     } else if (msg.includes('PERMISSION_DENIED')) {
-      openNotifyModal(
-        '<p>Доступ до сповіщень заблоковано.</p>' +
-        '<p>Дозвольте сповіщення у налаштуваннях сайту та спробуйте знову.</p>'
-      );
+      openNotifyModal('<p>Доступ до сповіщень заблоковано. Дозвольте в налаштуваннях сайту.</p>');
     } else if (msg.includes('SW') || msg.includes('SW_NOT_READY') || msg.includes('NO_SW')) {
-      openNotifyModal(
-        '<p>Сервіс-воркер не активний або сайт не з HTTPS/localhost.</p>' +
-        '<p>Перезавантажте сторінку, перевірте <code>service-worker.js</code> та режим HTTPS.</p>'
-      );
+      openNotifyModal('<p>Сервіс-воркер не активний або сайт не з HTTPS/localhost.</p>');
     } else {
       showToast('Не вдалося змінити підписку. Перевірте консоль.', 4500);
     }
@@ -205,6 +212,7 @@ async function toggleSubscription(boardId, column, wantSub, btnEl) {
     btnEl.disabled = false;
   }
 }
+
 
 /* ===== Tx move ===== */
 async function moveTx({fromBoardId,toBoardId,taskId,taskObj,targetColumn}){
@@ -280,15 +288,25 @@ function columnHtml(key,title,extra,boardId){
   </div>`;
 }
 
-function renderTask(task,listEl,boardId){
-  const el=document.createElement('div'); el.className='block_task-list'; el.draggable=true;
-  el.dataset.id=task.id; el.dataset.title=task.title; el.dataset.url=task.url; el.dataset.boardId=boardId;
-  const short = task.url.length>60 ? task.url.slice(0,60)+'…' : task.url;
-  el.innerHTML=`
+function renderTask(task, listEl, boardId){
+  const el = document.createElement('div');
+  el.className = 'block_task-list';
+  el.draggable = true;
+  el.dataset.id = task.id;
+  el.dataset.title = task.title;
+  el.dataset.url = task.url;
+  el.dataset.boardId = boardId;
+
+  const short = shorten(task.url, 15); // <-- 15 символів
+
+  el.innerHTML = `
     <div class="task-title" draggable="false" style="user-select:none;font-weight:700;margin-bottom:6px;">${escapeHtml(task.title)}</div>
-    <div class="task-url" draggable="false" style="user-select:none;">URL: <a href="${escapeAttr(task.url)}" target="_blank" rel="noopener" class="task-link" draggable="false" style="user-select:none;">${escapeHtml(short)}</a></div>`;
+    <div class="task-url" draggable="false" style="user-select:none;">
+      URL: <a href="${escapeAttr(task.url)}" target="_blank" rel="noopener" class="task-link" draggable="false" style="user-select:none;">${escapeHtml(short)}</a>
+    </div>`;
   addDrag(el); addDeleteDblClick(el); listEl.appendChild(el);
 }
+
 
 /* ===== Bells ===== */
 async function initBellsForBoard(wrap, boardId){
