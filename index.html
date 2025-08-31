@@ -108,6 +108,25 @@
       </div>
     </div>
 
+        <!-- Modal: Notifications help -->
+    <div id="modal-notify" class="modal-task" style="display:none;">
+      <div class="modal-task-content">
+        <span class="modal-task-close" id="modal-notify-close">&times;</span>
+        <div class="modal-task-header"><h2>Сповіщення про нові задачі</h2></div>
+        <div class="modal-body" id="notify-body" style="display:flex;flex-direction:column;gap:10px;">
+          <p>Увімкніть веб-сповіщення, щоб отримувати пуші для обраної колонки.</p>
+          <ul style="margin-left:16px;">
+            <li>Дозвольте сповіщення у браузері</li>
+            <li>У корені сайту має бути <code>/firebase-messaging-sw.js</code></li>
+            <li>У Firebase Console → Cloud Messaging вставте Web Push (VAPID) ключ</li>
+          </ul>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" id="notify-cancel">Закрити</button>
+          <button type="button" class="btn btn-primary" id="notify-try">Надати дозвіл</button>
+        </div>
+      </div>
+    </div>
   
     <!-- Boards container: each board has its own 3 columns -->
     <div id="boards" class="boards"></div>
@@ -115,18 +134,25 @@
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <!-- Firebase Messaging + Functions (compat) -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js"></script>
     <script src="js/firebase-config.js"></script>
-    <script src="firebase-messaging-sw.js"></script>
-    
-    <script src="js/script.js"></script>
+    <script src="js/script.js" defer></script>
     <script>
       if ('serviceWorker' in navigator) {
+        // перезавантажити сторінку, коли новий SW активується
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          // контролер змінився => активувався новий SW
+          window.location.reload();
+        });
+
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/service-worker.js')
-            .then(reg => console.log('Service Worker registered', reg))
-            .catch(err => console.log('Service Worker registration failed', err));
+            .then(reg => {
+              console.log('SW registered', reg.scope);
+            })
+            .catch(err => console.log('SW registration failed', err));
         });
       }
     </script>

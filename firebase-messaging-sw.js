@@ -1,4 +1,4 @@
-// /firebase-messaging-sw.js
+// /firebase-messaging-sw.js (root)
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js');
 
@@ -16,7 +16,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 
-// Кастомна обробка бекґраунд-повідомлень (не обов'язково)
+// показ бекграунд-нотіфів (якщо backend їх шле з notification або webpush)
 messaging.onBackgroundMessage((payload) => {
   const { title, body, icon } = (payload?.notification || {});
   self.registration.showNotification(title || 'Нове сповіщення', {
