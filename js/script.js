@@ -166,7 +166,6 @@ async function ensureMessagingReady() {
   return token;
 }
 
-
 async function getMyTopics() {
   const token = localStorage.getItem('fcmToken');
   if (!token) return { token: null, topics: [] };
