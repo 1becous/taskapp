@@ -1,8 +1,8 @@
 /* service-worker.js — Workbox + Firebase Messaging (GH Pages friendly) */
 
 /* ---- Firebase Messaging (бекграунд пуші) ---- */
-importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js');
 
 firebase.initializeApp({
   apiKey: "AIzaSyCbSXhG79R6WNNTh-JrefUmQ7SIe820NtA",

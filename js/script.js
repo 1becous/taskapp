@@ -124,29 +124,48 @@ async function ensureMessagingReady() {
   if (!CONFIG.VAPID_KEY || CONFIG.VAPID_KEY.startsWith('PASTE_')) throw new Error('NO_VAPID');
   if (!('serviceWorker' in navigator)) throw new Error('NO_SW');
 
-  const swReg = await navigator.serviceWorker.ready;         // SW вже зареєстрований у index.html
+  // чекаємо ВАШ service-worker з scope "./"
+  const swReg = await navigator.serviceWorker.ready;
+
+  // ініціалізуємо messaging один раз
   if (!messaging) messaging = firebase.messaging();
 
-  if (Notification.permission !== 'granted' && Notification.permission !== 'default') {
+  // ВАЖЛИВО: змусити compat-SDK використовувати наш SW і не реєструвати дефолтний
+  if (typeof messaging.useServiceWorker === 'function') {
+    messaging.useServiceWorker(swReg);
+  }
+
+  // якщо дозвіл уже заблоковано — не ліземо далі
+  if (Notification.permission === 'denied') {
     throw new Error('PERMISSION_DENIED');
   }
 
+  // беремо/оновлюємо токен з КЕШЕМ
   let token = localStorage.getItem('fcmToken');
   if (!token) {
-    token = await messaging.getToken({ vapidKey: CONFIG.VAPID_KEY, serviceWorkerRegistration: swReg });
+    token = await messaging.getToken({
+      vapidKey: CONFIG.VAPID_KEY,
+      serviceWorkerRegistration: swReg, // <- КЛЮЧОВЕ
+    });
     if (!token) throw new Error('TOKEN_FAIL');
     localStorage.setItem('fcmToken', token);
   }
 
+  // слухач повідомлень у відкритій вкладці
   if (!ensureMessagingReady._bound) {
-    messaging.onMessage((p) => {
-      const n = p?.notification || {};
-      showToast(`<strong>${n.title || 'Нове сповіщення'}</strong><div class="small">${n.body || ''}</div>`, 5000);
+    messaging.onMessage((payload) => {
+      const n = payload?.notification || {};
+      showToast(
+        `<strong>${n.title || 'Нове сповіщення'}</strong><div class="small">${n.body || ''}</div>`,
+        5000
+      );
     });
     ensureMessagingReady._bound = true;
   }
+
   return token;
 }
+
 
 async function getMyTopics() {
   const token = localStorage.getItem('fcmToken');
