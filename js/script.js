@@ -9,7 +9,7 @@ const CONFIG = {
   USE_TRANSACTIONS: true,
   VAPID_KEY: 'BKs3Rd0EkbvRIzcYU048oMi-iWuOOJKy6G5HhCZmzp6fy_mQVbX3oYP1dJ5VEuCi58NEYW8Z9W49n3Mh8P_hx-E',
   SUBSCRIBABLE_COLUMNS: ['right', 'center'], // без "left"
-  FUNCTIONS_REGION: 'europe-west1'
+  FUNCTIONS_REGION: 'europe-central2'
 };
 
 /* ===== DOM refs ===== */
