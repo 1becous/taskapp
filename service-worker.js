@@ -1,6 +1,6 @@
-/* service-worker.js — Workbox + Firebase Messaging */
+/* service-worker.js — Workbox + Firebase Messaging (GH Pages friendly) */
 
-// ---- Firebase Messaging (бекграунд пуші) ----
+/* ---- Firebase Messaging (бекграунд пуші) ---- */
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js');
 
@@ -17,50 +17,54 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
+const iconUrl = new URL('icons/192.jpg', self.registration.scope).toString();
+
 messaging.onBackgroundMessage((payload) => {
   const n = payload?.notification || {};
   self.registration.showNotification(n.title || 'Нове сповіщення', {
     body: n.body || '',
-    icon: '/icons/192.jpg', // зміни на свій існуючий файл за потреби
-    data: payload?.fcmOptions?.link || payload?.data?.url || '/'
+    icon: iconUrl,
+    data: payload?.fcmOptions?.link || payload?.data?.url || new URL('index.html', self.registration.scope).toString()
   });
 });
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const url = event.notification?.data || '/';
+  const url = event.notification?.data || new URL('index.html', self.registration.scope).toString();
   event.waitUntil(self.clients.openWindow(url));
 });
-// ---- кінець блоку Firebase ----
+/* ---- кінець блоку Firebase ---- */
 
-// ---- Workbox ----
+/* ---- Workbox ---- */
 importScripts('https://storage.googleapis.com/workbox-cdn/releases/6.5.4/workbox-sw.js');
 
 // миттєве оновлення
 self.skipWaiting();
 workbox.core.clientsClaim();
 
-// App Shell: підвищуй revision при змінах
+// ⚠️ ЛИШЕ ВІДНОСНІ шляхи (без початкового /) — вони інтерпретуються від scope
+// Видалив css/normal.css (його немає в індексі).
 workbox.precaching.precacheAndRoute([
-  { url: '/',                   revision: '1' },
-  { url: '/index.html',         revision: '6' },
-  { url: '/css/normal.css',     revision: '1' },
-  { url: '/css/main.css',       revision: '1' },
-  { url: '/js/firebase-config.js', revision: '1' },
-  { url: '/js/script.js',       revision: '2' },
-  { url: '/manifest.json',      revision: '1' },
-  { url: '/icons/192.jpg',      revision: '1' },
-  { url: '/icons/192.ico',      revision: '1' },
-  { url: '/icons/512.jpg',      revision: '1' }
-]);
+  { url: 'index.html',            revision: '7' },
+  { url: 'css/main.css',          revision: '2' },
+  { url: 'js/firebase-config.js', revision: '1' },
+  { url: 'js/script.js',          revision: '3' },
+  { url: 'manifest.json',         revision: '1' },
+  { url: 'icons/192.jpg',         revision: '1' },
+  { url: 'icons/192.ico',         revision: '1' },
+  { url: 'icons/512.jpg',         revision: '1' }
+], {
+  // ігноруємо query-параметри при співставленні
+  ignoreURLParametersMatching: [/.*/]
+});
 
-// не чіпаємо окремий FCM SW, якщо він раптом існує
+// не чіпаємо окремий FCM SW, якщо хтось випадково звернеться
 workbox.routing.registerRoute(
-  ({url}) => url.pathname === '/firebase-messaging-sw.js',
+  ({url}) => url.pathname.endsWith('/firebase-messaging-sw.js'),
   new workbox.strategies.NetworkOnly()
 );
 
-// HTML: NetworkFirst для свіжих оновлень
+// HTML: NetworkFirst (оновлення із мережі, fallback — кеш)
 workbox.routing.registerRoute(
   ({request}) => request.mode === 'navigate',
   new workbox.strategies.NetworkFirst({
@@ -70,7 +74,7 @@ workbox.routing.registerRoute(
   })
 );
 
-// CSS/JS: StaleWhileRevalidate
+// CSS/JS: Stale-While-Revalidate
 workbox.routing.registerRoute(
   ({request}) => request.destination === 'style' || request.destination === 'script',
   new workbox.strategies.StaleWhileRevalidate({
@@ -79,7 +83,7 @@ workbox.routing.registerRoute(
   })
 );
 
-// Зображення: CacheFirst
+// Зображення: Cache-First
 workbox.routing.registerRoute(
   ({request}) => request.destination === 'image',
   new workbox.strategies.CacheFirst({
@@ -95,10 +99,10 @@ workbox.routing.registerRoute(
 );
 
 // offline fallback для документів
-const FALLBACK_URL = '/index.html';
+const FALLBACK_URL = 'index.html';
 workbox.routing.setCatchHandler(async ({event}) => {
   if (event.request.destination === 'document') {
-    return caches.match(FALLBACK_URL);
+    return caches.match(FALLBACK_URL, { ignoreSearch: true });
   }
   return Response.error();
 });
