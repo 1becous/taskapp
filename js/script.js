@@ -287,6 +287,10 @@ function columnHtml(key,title,extra,boardId){
     <div class="block_list" data-column-list="${key}"></div>
   </div>`;
 }
+function shorten(s, n = 15) {
+  const str = (s ?? '').toString();
+  return str.length > n ? str.slice(0, n) + '…' : str;
+}
 
 function renderTask(task, listEl, boardId){
   const el = document.createElement('div');
