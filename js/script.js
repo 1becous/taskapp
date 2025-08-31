@@ -82,57 +82,38 @@ async function renameBoard(id, name){ await boardRef(id).set({name},{merge:true}
 async function deleteBoard(id){ await boardRef(id).delete(); }
 async function saveCols(id, cols){ await boardRef(id).set(normCols(cols),{merge:true}); }
 
-/* ===== Messaging ===== */
+/* ===== Messaging (fixed modal flow) ===== */
 let messaging = null;
+let pendingSubscription = null; // що саме підписуємо після дозволу
 
 async function ensureMessagingReady() {
   if (!isMessagingSupported()) throw new Error('NOT_SUPPORTED');
   if (!CONFIG.VAPID_KEY || CONFIG.VAPID_KEY.startsWith('PASTE_')) throw new Error('NO_VAPID');
   if (!('serviceWorker' in navigator)) throw new Error('NO_SW');
 
-  // Чекаємо готовності вже зареєстрованого service-worker.js
-  let swReg;
-  try {
-    swReg = await navigator.serviceWorker.ready;
-  } catch (e) {
-    console.error('[FCM] SW not ready', e);
-    throw new Error('SW_NOT_READY');
-  }
-
+  const swReg = await navigator.serviceWorker.ready; // чекаємо існуючий SW
   if (!messaging) messaging = firebase.messaging();
 
-  // Запит дозволу (якщо потрібно)
-  if (Notification.permission === 'default') {
-    const perm = await Notification.requestPermission();
-    if (perm !== 'granted') throw new Error('PERMISSION_DENIED');
-  } else if (Notification.permission !== 'granted') {
+  // якщо ще не надано — тут НІЧОГО не робимо; дозвіл запросимо із модалки
+  if (Notification.permission !== 'granted' && Notification.permission !== 'default') {
     throw new Error('PERMISSION_DENIED');
   }
 
-  // Отримати/закешувати токен
+  // токен з кешу або отримуємо новий
   let token = localStorage.getItem('fcmToken');
   if (!token) {
-    try {
-      token = await messaging.getToken({
-        vapidKey: CONFIG.VAPID_KEY,
-        serviceWorkerRegistration: swReg
-      });
-    } catch (e) {
-      console.error('[FCM] getToken failed', e);
-      throw new Error('TOKEN_FAIL');
-    }
+    token = await messaging.getToken({
+      vapidKey: CONFIG.VAPID_KEY,
+      serviceWorkerRegistration: swReg
+    });
     if (!token) throw new Error('TOKEN_FAIL');
     localStorage.setItem('fcmToken', token);
   }
 
-  // Фореграунд-нотіфікації (тости)
   if (!ensureMessagingReady._bound) {
-    messaging.onMessage((payload) => {
-      const n = payload?.notification || {};
-      showToast(
-        `<strong>${n.title || 'Нове сповіщення'}</strong><div class="small">${n.body || ''}</div>`,
-        5000
-      );
+    messaging.onMessage((p) => {
+      const n = p?.notification || {};
+      showToast(`<strong>${n.title || 'Нове сповіщення'}</strong><div class="small">${n.body || ''}</div>`, 5000);
     });
     ensureMessagingReady._bound = true;
   }
@@ -151,67 +132,81 @@ async function getMyTopics() {
 function topicFor(boardId, col) {
   return `board_${boardId}_${col}`.replace(/[^a-zA-Z0-9_\-]/g, '_');
 }
-
 function setBellUi(btn, sub) {
   btn.dataset.subscribed = sub ? '1' : '0';
   btn.title = sub ? 'Відписатись від сповіщень' : 'Підписатись на сповіщення';
   btn.textContent = sub ? '🔔' : '🔕';
 }
 
-async function toggleSubscription(boardId, column, wantSub, btnEl) {
-  // якщо дозволу ще не було — покажемо модалку і повторимо підписку після кліку
-  if (isMessagingSupported() && Notification.permission === 'default') {
-    openNotifyModal(
-      '<p>Дозвольте сповіщення, щоб підписатися на колонку.</p>'
-    );
-    // одноразовий обробник "Надати дозвіл"
-    const handler = async () => {
-      notifyTryBtn.removeEventListener('click', handler);
-      closeNotifyModal();
-      // після надання дозволу — повторно викликаємо підписку
-      toggleSubscription(boardId, column, wantSub, btnEl);
-    };
-    notifyTryBtn.addEventListener('click', handler, { once: true });
-    return;
-  }
-
+// справжня дія підписки/відписки
+async function doToggleSubscription(boardId, column, wantSub, btnEl) {
   btnEl.disabled = true;
   try {
     const token = await ensureMessagingReady();
     const callable = wantSub
       ? functions.httpsCallable('subscribeToColumn')
       : functions.httpsCallable('unsubscribeFromColumn');
-
     await callable({ token, boardId, column });
     setBellUi(btnEl, wantSub);
-
     showToast(
       wantSub
         ? `🔔 Підписка на «${column === 'right' ? 'На редагування' : 'На тайп'}» увімкнена`
         : '🔕 Підписку вимкнено'
     );
   } catch (e) {
-    console.error('[FCM] toggleSubscription:', e);
+    console.error('[FCM] doToggleSubscription:', e);
     const msg = String(e.message || '');
-
     if (msg.includes('NO_VAPID')) {
-      openNotifyModal(
-        '<p><strong>VAPID ключ не налаштований.</strong></p>' +
-        '<p>Вставте публічний ключ у <code>CONFIG.VAPID_KEY</code> (Firebase → Cloud Messaging → Web Push certificates).</p>'
-      );
+      openNotifyModal('<p><strong>VAPID ключ не налаштований.</strong></p><p>Додай публічний ключ у <code>CONFIG.VAPID_KEY</code>.</p>');
     } else if (msg.includes('NOT_SUPPORTED')) {
-      openNotifyModal('<p>Цей браузер / iOS PWA не підтримує FCM пуші. Будуть тільки тости.</p>');
+      openNotifyModal('<p>Цей браузер / iOS PWA не підтримує FCM. Працюватимуть лише тости у відкритій вкладці.</p>');
     } else if (msg.includes('PERMISSION_DENIED')) {
-      openNotifyModal('<p>Доступ до сповіщень заблоковано. Дозвольте в налаштуваннях сайту.</p>');
-    } else if (msg.includes('SW') || msg.includes('SW_NOT_READY') || msg.includes('NO_SW')) {
-      openNotifyModal('<p>Сервіс-воркер не активний або сайт не з HTTPS/localhost.</p>');
+      openNotifyModal('<p>Доступ до сповіщень заблоковано. Дозволь у налаштуваннях сайту.</p>');
+    } else if (msg.includes('SW')) {
+      openNotifyModal('<p>Service Worker не активний або сайт не з HTTPS/localhost.</p>');
     } else {
-      showToast('Не вдалося змінити підписку. Перевірте консоль.', 4500);
+      showToast('Не вдалося змінити підписку. Перевір консоль.', 4500);
     }
   } finally {
     btnEl.disabled = false;
   }
 }
+
+// обгортка, яка показує модалку, якщо потрібно
+async function toggleSubscription(boardId, column, wantSub, btnEl) {
+  // Якщо браузер підтримує пуші, але дозвіл ще не дано — спочатку модалка
+  if (isMessagingSupported() && Notification.permission === 'default') {
+    pendingSubscription = { boardId, column, wantSub, btnEl };
+    openNotifyModal('<p>Дозвольте сповіщення, щоб підписатися на колонку.</p>');
+    return;
+  }
+  // Якщо вже granted/blocked — робимо дію відразу
+  return doToggleSubscription(boardId, column, wantSub, btnEl);
+}
+
+/* модалка: "Надати дозвіл" */
+if (notifyTryBtn) {
+  notifyTryBtn.onclick = async () => {
+    try {
+      const perm = await Notification.requestPermission();
+      if (perm !== 'granted') {
+        showToast('Дозвіл не надано.', 3500);
+        return;
+      }
+      closeNotifyModal();
+      if (pendingSubscription) {
+        const { boardId, column, wantSub, btnEl } = pendingSubscription;
+        await doToggleSubscription(boardId, column, wantSub, btnEl);
+      }
+    } catch (e) {
+      console.error('[FCM] requestPermission failed:', e);
+      showToast('Не вдалося отримати дозвіл на сповіщення.', 4000);
+    } finally {
+      pendingSubscription = null;
+    }
+  };
+}
+
 
 
 /* ===== Tx move ===== */
