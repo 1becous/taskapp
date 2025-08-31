@@ -140,11 +140,16 @@
     <script src="js/script.js" defer></script>
     <script>
       if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          // коли активується новий SW — оновити сторінку
+          window.location.reload();
+        });
+
         window.addEventListener('load', () => {
-          navigator.serviceWorker
-            .register('./service-worker.js', { scope: './' })   // ✅ відносний шлях
-            .then(reg => console.log('Service Worker registered', reg))
-            .catch(err => console.log('Service Worker registration failed', err));
+          // ВАЖЛИВО: відносний шлях і локальний scope для /taskapp/
+          navigator.serviceWorker.register('./service-worker.js', { scope: './' })
+            .then(reg => console.log('SW registered', reg.scope))
+            .catch(err => console.log('SW registration failed', err));
         });
       }
     </script>
